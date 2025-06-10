@@ -2,13 +2,19 @@ const Express = require('express');
 const Mongoose = require('mongoose');
 const cors = require('cors');
 const path = require('path'); // ⭐ ADD THIS LINE: Import the path module
+const cookieParser = require('cookie-parser'); // Import cookie-parser if needed
 require('dotenv').config();
 
 const app = Express();
 const PORT = process.env.PORT || 3000; // Define PORT for consistent use
 
 app.use(Express.json());
-app.use(cors());
+app.use(cors({
+    origin: 'http://localhost:5173', // Adjust this to your frontend URL
+    credentials: true // Allow cookies to be sent with requests
+}));
+app.use(Express.urlencoded({ extended: true }));
+app.use(cookieParser()); // <-- Add this line to use cookie-parser
 
 // ⭐ ADD THIS LINE: Serve static files from the 'uploads' directory
 // This makes files in 'backend/uploads' accessible via '/uploads' URL path from the browser

@@ -1,46 +1,47 @@
+// frontend/src/Common/Login.jsx
 import React, { useState } from 'react';
-import { Link, useNavigate } from 'react-router-dom'; // Import useNavigate
+import { Link, useNavigate } from 'react-router-dom';
+import axios from 'axios'; // Import axios
+import { useAuth } from './AuthContext';
 
 export default function Login() {
-  const navigate = useNavigate(); // Initialize useNavigate
+  const navigate = useNavigate();
+  const { login } = useAuth(); // Destructure the login function from AuthContext
 
-  // State to manage password visibility
   const [showPassword, setShowPassword] = useState(false);
-
-  // State to store all form input values in a single object
   const [formData, setFormData] = useState({
-    email: '', // ⭐ Change from pinNumber to email
+    email: '',
     password: '',
   });
 
-  // State for messages (e.g., login errors, success)
   const [message, setMessage] = useState('');
   const [isError, setIsError] = useState(false);
   const [loading, setLoading] = useState(false);
 
-
-  // Function to toggle password visibility
   const togglePasswordVisibility = () => {
     setShowPassword(!showPassword);
   };
 
-  // Generic handler for input changes
   const handleChange = (e) => {
     const { name, value } = e.target;
     setFormData(prev => ({
-      ...prev, // Keep existing form data
-      [name]: value // Update the specific field by its 'name' attribute
+      ...prev,
+      [name]: value
     }));
+    // Clear messages when user starts typing again
+    if (message) {
+      setMessage('');
+      setIsError(false);
+    }
   };
 
-  const handleLogin = async (e) => { // Make function async
-    e.preventDefault(); // Prevent default form submission
+  const handleLogin = async (e) => {
+    e.preventDefault();
 
-    setMessage(''); // Clear previous messages
+    setMessage('');
     setIsError(false);
     setLoading(true);
 
-    // Basic frontend validation
     if (!formData.email.trim() || !formData.password.trim()) {
       setMessage('Please enter both email and password.');
       setIsError(true);
@@ -49,39 +50,44 @@ export default function Login() {
     }
 
     try {
-      const response = await fetch('http://localhost:3000/api/auth/login', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          email: formData.email, // ⭐ Send email
-          password: formData.password,
-        }),
+      // ⭐⭐⭐ Use axios for the request ⭐⭐⭐
+      const response = await axios.post('http://localhost:3000/api/auth/login', {
+        email: formData.email,
+        password: formData.password,
+      }, {
+        withCredentials: true, // ⭐ CRUCIAL for sending/receiving HTTP-only cookies
       });
 
-      const result = await response.json();
+      console.log('Login successful:', response.data);
+      setMessage(response.data.message || 'Login successful!');
+      setIsError(false);
 
-      if (response.ok) {
-        setMessage(result.message || 'Login successful!');
-        setIsError(false);
-        console.log('Login successful:', result);
-        // Optionally store user ID or token (e.g., in localStorage)
-        // localStorage.setItem('userId', result.userId);
-        // localStorage.setItem('userRole', result.userRole);
+      // Call the login function from AuthContext
+      login(response.data.user);
 
-        // Redirect to a dashboard or home page after successful login
-        // You'll need to define your routes
-       navigate('/')
-
-
+      // Redirect if backend sends a redirect field
+      if (response.data.redirect) {
+        navigate(response.data.redirect);
       } else {
-        setMessage(result.message || 'Login failed. Please check your credentials.');
-        setIsError(true);
+        // Fallback: Redirect after a short delay for the message to be seen
+        setTimeout(() => {
+          navigate('/'); // Redirect to the home page or dashboard
+        }, 1500);
       }
+
     } catch (error) {
       console.error('Error during login:', error);
-      setMessage('Network error or server is unreachable. Please try again later.');
+      // Handle different types of errors from axios
+      if (error.response) {
+        // Server responded with a status code outside of 2xx range
+        setMessage(error.response.data.message || 'Login failed. Please check your credentials.');
+      } else if (error.request) {
+        // The request was made but no response was received
+        setMessage('No response from server. Please try again later.');
+      } else {
+        // Something happened in setting up the request that triggered an Error
+        setMessage('An unexpected error occurred. Please try again.');
+      }
       setIsError(true);
     } finally {
       setLoading(false);
@@ -103,15 +109,15 @@ export default function Login() {
             </label>
             <form className="mt-10" onSubmit={handleLogin}>
               {/* Email Input */}
-              <div> {/* ⭐ Changed from Pin Number to Email */}
+              <div>
                 <input
-                  type="email" // Use type="email" for better accessibility and validation
+                  type="email"
                   name="email"
-                  placeholder="Enter Your Email" // ⭐ Changed placeholder
+                  placeholder="Enter Your Email"
                   className="mt-1 block w-full border-none bg-gray-100 h-11 rounded-xl shadow-lg hover:bg-blue-100 focus:bg-blue-100 focus:ring-0 text-center"
                   value={formData.email}
                   onChange={handleChange}
-                  required // Make email required
+                  required
                 />
               </div>
 
@@ -124,7 +130,7 @@ export default function Login() {
                   className="mt-1 block w-full border-none bg-gray-100 h-11 rounded-xl shadow-lg hover:bg-blue-100 focus:bg-blue-100 focus:ring-0 text-center pr-10"
                   value={formData.password}
                   onChange={handleChange}
-                  required // Make password required
+                  required
                 />
                 <button
                   type="button"
@@ -158,18 +164,17 @@ export default function Login() {
               {/* Message display for login */}
               {loading && <p className="text-center text-blue-600 mt-4">Logging in...</p>}
               {message && (
-                <p className={`text-center mt-4 ${isError ? 'text-red-500' : 'text-green-600'}`}>
+                <p className={`text-center mt-4 ${isError ? 'text-red-500' : 'text-green-600'}`}>              {/* Redirect to home if login is successful and backend sends redirect */}
                   {message}
                 </p>
               )}
-
 
               {/* Login Button */}
               <div className="mt-7">
                 <button
                   type="submit"
                   className="bg-blue-500 w-full py-3 rounded-xl text-white shadow-xl hover:shadow-inner focus:outline-none transition duration-500 ease-in-out transform hover:-translate-x hover:scale-105"
-                  disabled={loading} // Disable button while loading
+                  disabled={loading}
                 >
                   {loading ? 'Logging In...' : 'Login'}
                 </button>

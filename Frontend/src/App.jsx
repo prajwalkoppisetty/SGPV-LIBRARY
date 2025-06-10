@@ -14,7 +14,7 @@ import Signup from './Components/Common/Signup';
 import BookList from './Components/Public/BookList';
 import Contact_Us from './Components/Public/Contact_Us';
 import My_Books from './Components/Public/My_Books';
-
+import Profile from './Components/Public/Profile';
 
 //Admin Components
 
@@ -34,6 +34,8 @@ function App() {
           <Route path='/My_Books' element={<My_Books/>}></Route>
           <Route path='/Login' element={<Login/>}></Route>
           <Route path='/Signup' element={<Signup/>}></Route>
+          <Route path='/Profile' element={<Profile/>}></Route>
+          {/* Add more routes as needed */}
         </Routes>
       </div>
     </>
