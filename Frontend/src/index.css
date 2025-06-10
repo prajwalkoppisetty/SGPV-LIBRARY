@@ -1,0 +1,29 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* Ensure html and body take up full height of content */
+html, body, #root {
+  height: 100%;
+  margin: 0;
+  padding: 0;
+ 
+}
+
+/* Apply global background gradient */
+body {
+  background: linear-gradient(to right, #60a5fa, #34d399); /* Tailwind's from-blue-400 to-emerald-400 */
+  -ms-overflow-style: none; /* For IE and Edge */
+}
+
+/* Hide scrollbars for a clean look */
+
+/* Chrome, Safari, Opera */
+.custom-scrollbar::-webkit-scrollbar {
+  display: none;
+}
+
+/* Firefox */
+html {
+  scrollbar-width: none;
+}
