@@ -56,14 +56,16 @@ export const AuthProvider = ({ children }) => {
       });
       setIsLoggedIn(false);
       setUser(null);
-      // localStorage.removeItem('user'); // Clear local storage if used
+      // Clear all localStorage on logout
+      localStorage.clear();
       console.log('Logged out successfully on client and server.');
     } catch (error) {
       console.error('Logout error:', error);
       // Even if backend logout fails, clear client-side state for UX
       setIsLoggedIn(false);
       setUser(null);
-      // localStorage.removeItem('user');
+      // Clear all localStorage on logout
+      localStorage.clear();
     }
   };
 
