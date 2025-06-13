@@ -15,18 +15,18 @@ import BookList from './Components/Public/BookList';
 import Contact_Us from './Components/Public/Contact_Us';
 import My_Books from './Components/Public/My_Books';
 import Profile from './Components/Public/Profile';
+import Cart from './Components/Public/Cart';
+import Footer from './Components/Common/Footer';
 
 //Admin Components
 
 
 function App() {
   return (
-    <>
+    <div className="flex flex-col min-h-screen">
       <Navbar />
-      
-      {/* This div's height will now correctly extend with content due to html/body height: 100% */}
-      <div className="w-full min-h-screen pt-24 md:pt-28">
-        {/* pt-24 for mobile, pt-28 for md+ screens, matches navbar height */}
+      {/* Main content area grows to fill available space */}
+      <div className="flex-1 w-full pt-24 md:pt-28">
         <Routes>
           <Route path='/' element={<Home/>}></Route>
           <Route path='/Booklist' element={<BookList/>}></Route>
@@ -35,10 +35,12 @@ function App() {
           <Route path='/Login' element={<Login/>}></Route>
           <Route path='/Signup' element={<Signup/>}></Route>
           <Route path='/Profile' element={<Profile/>}></Route>
+          <Route path='/Cart' element={<Cart/>}></Route>
           {/* Add more routes as needed */}
         </Routes>
       </div>
-    </>
+      <Footer />
+    </div>
   );
 }
 

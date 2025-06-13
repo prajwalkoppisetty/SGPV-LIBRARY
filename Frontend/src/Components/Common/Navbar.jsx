@@ -53,6 +53,11 @@ function Navbar() {
 
       {/* Login/Logout Button for Desktop */}
       <div className='relative hidden xl:flex items-center gap-3 pt-2'>
+        {isLoggedIn && (
+          <Link to="/cart" className="flex items-center justify-center mr-5">
+            <i className="bx bx-cart text-2xl hover:text-blue-600 transition" title="Cart"></i>
+          </Link>
+        )}
         {isLoggedIn ? (
           <button
             type="button"
@@ -115,6 +120,17 @@ function Navbar() {
             <Link to="/Contact_Us" className="block w-full h-full">Contact Us</Link>
           </li>
           {/* Mobile Login/Logout Link */}
+          {isLoggedIn && (
+            <li
+              className="list-none w-full text-center p-4 hover:bg-sky-400 hover:text-white transition-all cursor-pointer border-b border-gray-200 flex items-center justify-center gap-2"
+              onClick={closeMenu}
+            >
+              <Link to="/cart" className="block w-full h-full flex items-center justify-center gap-2">
+                <i className="bx bx-cart text-2xl"></i>
+                <span>Cart</span>
+              </Link>
+            </li>
+          )}
           <li
             className="list-none w-full text-center p-4 hover:bg-sky-400 hover:text-white transition-all cursor-pointer"
             onClick={isLoggedIn ? handleLogout : closeMenu}

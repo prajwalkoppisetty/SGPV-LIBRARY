@@ -1,7 +1,127 @@
-import React from 'react'
+import React, { useEffect, useRef, useState } from 'react';
+import { useAuth } from '../Common/AuthContext';
+import subjectsData from '../Common/Subjects';
+
+const semOrder = ["1ST-SEM", "3RD-SEM", "4TH-SEM", "5TH-SEM"];
 
 export default function BookList() {
+  const { user } = useAuth();
+  const branch = user?.branch || "CME";
+  const branchData = subjectsData[branch] || [];
+
+  const [selectedSem, setSelectedSem] = useState(branchData[0]?.sem || semOrder[0]);
+  const [selectedSubjects, setSelectedSubjects] = useState([]);
+
+  const buttonRefs = useRef({});
+
+  const [highlightStyle, setHighlightStyle] = useState({});
+
+  useEffect(() => {
+    const currentBtn = buttonRefs.current[selectedSem];
+    if (currentBtn) {
+      const { offsetLeft, offsetWidth } = currentBtn;
+      setHighlightStyle({
+        left: offsetLeft,
+        width: offsetWidth,
+      });
+    }
+  }, [selectedSem]);
+
+  const handleSemClick = (sem) => {
+    setSelectedSem(sem);
+    setSelectedSubjects([]);
+  };
+
+  const handleSubjectToggle = (code) => {
+    setSelectedSubjects((prev) =>
+      prev.includes(code)
+        ? prev.filter((c) => c !== code)
+        : [...prev, code]
+    );
+  };
+
+  const handleAddToCart = () => {
+    alert(`Added subjects: ${selectedSubjects.join(', ')}`);
+  };
+
+  const currentSemSubjects = branchData.find((s) => s.sem === selectedSem)?.subjects || [];
+
   return (
-    <div>BookList</div>
-  )
+    <div className="flex flex-col items-center min-h-[70vh] pt-6 sm:pt-10 px-2">
+      {/* Semester Tabs with Animation */}
+      <div className="relative flex w-full max-w-md sm:max-w-lg md:max-w-xl justify-between mb-8 rounded-full px-1 py-1">
+        {/* Animated highlight */}
+        <span
+          className="absolute top-1 left-0 h-[90%] bg-white rounded-full shadow-md transition-all duration-300 ease-[cubic-bezier(.68,-0.55,.27,1.55)] pointer-events-none"
+          style={{
+            ...highlightStyle,
+            opacity: branchData.some((s) => s.sem === selectedSem) ? 1 : 0.5, // Show highlight even if no subjects, but faded
+          }}
+        />
+
+        {semOrder.map((sem) => {
+          // Always render the button, but disable if not available
+          const isAvailable = branchData.some((s) => s.sem === sem);
+          return (
+            <button
+              key={sem}
+              ref={(el) => (buttonRefs.current[sem] = el)}
+              className={`z-10 flex-1 text-center px-3 sm:px-6 md:px-8 py-2 sm:py-4 font-semibold rounded-full transition-colors duration-300 text-sm sm:text-base md:text-lg
+                ${selectedSem === sem ? 'text-blue-600' : 'text-gray-700 hover:text-blue-500'}
+                ${!isAvailable ? 'opacity-50 cursor-not-allowed' : ''}
+              `}
+              onClick={() => isAvailable && handleSemClick(sem)}
+              disabled={!isAvailable}
+            >
+              {sem}
+            </button>
+          );
+        })}
+      </div>
+
+      {/* Subject List */}
+      <div className="w-full max-w-md sm:max-w-lg md:max-w-xl bg-white rounded-xl shadow p-4 sm:p-6 md:p-8">
+        <div className="flex font-semibold text-gray-700 bg-gray-200 rounded-t-md px-4 sm:px-6 md:px-8 py-3 text-base sm:text-lg md:text-xl">
+          <div className="w-1/4">Subject Code</div>
+          <div className="w-1/2">Subjects</div>
+          <div className="w-1/4 text-center">Select</div>
+        </div>
+
+        {currentSemSubjects.length === 0 ? (
+          <div className="text-center py-8 text-gray-500 text-base sm:text-lg md:text-xl">
+            No subjects found for this semester.
+          </div>
+        ) : (
+          currentSemSubjects.map((subject) => (
+            <div
+              key={subject.code}
+              className="flex items-center px-4 sm:px-6 md:px-8 py-3 border-b last:border-b-0 hover:bg-blue-50 text-base sm:text-lg md:text-xl"
+            >
+              <div className="w-1/4">{subject.code}</div>
+              <div className="w-1/2">{subject.name}</div>
+              <div className="w-1/4 flex justify-center">
+                <input
+                  type="checkbox"
+                  className="w-6 h-6 accent-blue-600"
+                  checked={selectedSubjects.includes(subject.code)}
+                  onChange={() => handleSubjectToggle(subject.code)}
+                />
+              </div>
+            </div>
+          ))
+        )}
+
+        {/* Add to Cart */}
+        <div className="flex justify-center mt-8">
+          <button
+            className="bg-blue-600 text-white px-8 sm:px-12 md:px-16 py-3 rounded-lg font-semibold hover:bg-blue-700 disabled:opacity-50 text-base sm:text-lg md:text-xl"
+            disabled={selectedSubjects.length === 0}
+            onClick={handleAddToCart}
+          >
+            Add To Cart
+          </button>
+        </div>
+      </div>
+    </div>
+  );
 }

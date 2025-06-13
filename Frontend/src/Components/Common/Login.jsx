@@ -65,6 +65,9 @@ export default function Login() {
       // Call the login function from AuthContext
       login(response.data.user);
 
+      // Log all cookies (note: HTTP-only cookies like 'token' will NOT be visible here)
+      console.log('All cookies:', document.cookie);
+
       // Redirect if backend sends a redirect field
       if (response.data.redirect) {
         navigate(response.data.redirect);

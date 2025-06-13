@@ -25,9 +25,18 @@ const upload = multer({
 const generateTokenAndSetCookie = (user, statusCode, res) => {
     // 1. Generate JWT
     const token = jwt.sign(
-        { id: user._id, email: user.email, name: user.name, pinNumber: user.pinNumber, branch: user.branch, user_role: user.user_role },
-        process.env.JWT_SECRET, // Use your secret key from .env
-        { expiresIn: '1h' } // Token expires in 1 hour
+    {
+        id: user._id,
+        email: user.email,
+        name: user.name,
+        pinNumber: user.pinNumber,
+        branch: user.branch,
+        user_role: user.user_role,
+        mobileNumber: user.mobileNumber // <-- keep this, it's small
+        // file_url: user.file_url      // <-- REMOVE THIS LINE!
+    },
+    process.env.JWT_SECRET,
+    { expiresIn: '1h' } // Token expires in 1 hour
     );
 
     // 2. Set JWT as an HTTP-only cookie
@@ -47,7 +56,9 @@ const generateTokenAndSetCookie = (user, statusCode, res) => {
             email: user.email,
             pinNumber: user.pinNumber,
             branch: user.branch,
-            userRole: user.user_role
+            userRole: user.user_role,
+            mobileNumber: user.mobileNumber,
+            file_url: user.file_url // <-- OK to send in response body
         }
     });
 };
@@ -227,20 +238,28 @@ router.post('/logout', (req, res) => {
 
 // --- Protected /me Route ---
 router.get('/me', protect, async (req, res) => {
-  if (req.user) {
-    return res.status(200).json({
-      success: true,
-      user: {
-        id: req.user.id,
-        email: req.user.email,
-        name: req.user.name,
-        pinNumber: req.user.pinNumber,
-        branch: req.user.branch,
-        userRole: req.user.user_role // Include role
-      }
-    });
-  } else {
-    return res.status(401).json({ success: false, message: 'Not authenticated' });
+  try {
+    // Fetch user from DB using id from JWT
+    const user = await User.findById(req.user.id);
+    if (user) {
+      return res.status(200).json({
+        success: true,
+        user: {
+          id: user._id,
+          email: user.email,
+          name: user.name,
+          pinNumber: user.pinNumber,
+          branch: user.branch,
+          userRole: user.user_role,
+          mobileNumber: user.mobileNumber,
+          file_url: user.file_url
+        }
+      });
+    } else {
+      return res.status(401).json({ success: false, message: 'Not authenticated' });
+    }
+  } catch (err) {
+    return res.status(500).json({ success: false, message: 'Server error' });
   }
 });
 
