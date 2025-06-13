@@ -65,6 +65,9 @@ export default function Login() {
       // Call the login function from AuthContext
       login(response.data.user);
 
+      // Print user role after successful login
+      console.log('User role:', response.data.user?.userRole);
+
       // Log all cookies (note: HTTP-only cookies like 'token' will NOT be visible here)
       console.log('All cookies:', document.cookie);
 
@@ -73,9 +76,10 @@ export default function Login() {
         navigate(response.data.redirect);
       } else {
         // Fallback: Redirect after a short delay for the message to be seen
+        
         setTimeout(() => {
           navigate('/'); // Redirect to the home page or dashboard
-        }, 1500);
+        }, 900);
       }
 
     } catch (error) {

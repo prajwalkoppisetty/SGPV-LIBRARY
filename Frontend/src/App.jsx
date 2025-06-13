@@ -2,6 +2,8 @@
 import React from 'react';
 import { Routes,Route } from 'react-router-dom';
 
+
+
 import './index.css';
 
 //Common Components
@@ -9,6 +11,7 @@ import Navbar from './Components/Common/Navbar';
 import Home  from './Components/Common/Home';
 import Login from './Components/Common/Login';
 import Signup from './Components/Common/Signup';
+import Page_Not_Available from './Components/Common/Page_Not_Available';
 
 //Public Components
 import BookList from './Components/Public/BookList';
@@ -19,6 +22,10 @@ import Cart from './Components/Public/Cart';
 import Footer from './Components/Common/Footer';
 
 //Admin Components
+import Orders from './Components/Admin/Orders';
+import Order_History from './Components/Admin/Order_History';
+import Monthly_Report from './Components/Admin/Monthly_Report';
+import { useAuth } from './Components/Common/AuthContext'; // Import Auth context
 
 
 function App() {
@@ -36,7 +43,15 @@ function App() {
           <Route path='/Signup' element={<Signup/>}></Route>
           <Route path='/Profile' element={<Profile/>}></Route>
           <Route path='/Cart' element={<Cart/>}></Route>
+          <Route path='/*' element={<Page_Not_Available/>}></Route>
           {/* Add more routes as needed */}
+
+          {/* Admin Routes */}
+          <Route path='/Orders' element={<Orders/>}></Route>
+          <Route path='/Order_History' element={<Order_History/>}></Route>
+          <Route path='/Monthly_Report' element={<Monthly_Report/>}></Route>
+          
+          {/* Catch-all route for undefined paths */}
         </Routes>
       </div>
       <Footer />
