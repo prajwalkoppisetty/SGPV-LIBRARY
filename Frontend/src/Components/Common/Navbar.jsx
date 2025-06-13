@@ -19,19 +19,23 @@ function Navbar() {
 
   const commonNavItems = [
     { path: '/', label: 'Home' },
-    { path: '/Profile', label: 'Profile' },
-  ];
-
-  const studentNavItems = [
-    { path: '/Booklist', label: 'Book List' },
-    { path: '/My_Books', label: 'My Books' },
     { path: '/Contact_Us', label: 'Contact Us' },
   ];
 
+  const studentNavItems = [
+    { path: '/Profile', label: 'Profile' },
+    { path: '/Booklist', label: 'Book List' },
+    { path: '/My_Books', label: 'My Books' },
+    
+    
+  ];
+
   const adminNavItems = [
+    { path: '/Profile', label: 'Profile' },
     { path: '/Orders', label: 'Orders' },
     { path: '/Order_History', label: 'Order History' },
     { path: '/Monthly_Report', label: 'Monthly Report' },
+    
   ];
 
   let navItems = [...commonNavItems];

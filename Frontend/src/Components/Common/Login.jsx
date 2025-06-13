@@ -79,7 +79,7 @@ export default function Login() {
         
         setTimeout(() => {
           navigate('/'); // Redirect to the home page or dashboard
-        }, 900);
+        }, );
       }
 
     } catch (error) {
