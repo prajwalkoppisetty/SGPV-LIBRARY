@@ -81,6 +81,10 @@ const OrderSchema = new mongoose.Schema({
     type: String,
     enum: ['pending', 'approved', 'rejected'],
     default: 'pending',
+  },
+  Reject_Reason: {
+    type: String,
+    default: ''
   }
 });
 

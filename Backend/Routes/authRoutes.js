@@ -6,6 +6,7 @@ const multer = require('multer');
 const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
 const { protect } = require('../middleware/authMiddleware');
+const nodemailer = require('nodemailer');
 
 // --- Multer Configuration for in-memory storage ---
 const storage = multer.memoryStorage();
@@ -327,5 +328,134 @@ router.get('/my_orders', protect, async (req, res) => {
     res.status(500).json({ message: 'Server error while fetching orders.' });
   }
 });
+
+// Admin: Get all pending orders
+router.get('/admin/orders', protect, async (req, res) => {
+  // TODO: Add admin check if needed
+  try {
+    const orders = await Order.find({ Status: 'pending' }).sort({ Order_Date: -1 });
+    res.json({ orders });
+  } catch (err) {
+    res.status(500).json({ message: 'Failed to fetch orders.' });
+  }
+});
+
+// Admin: Accept order
+router.post('/admin/orders/:id/accept', protect, async (req, res) => {
+  // TODO: Add admin check if needed
+  try {
+    const order = await Order.findById(req.params.id);
+    if (!order) return res.status(404).json({ message: 'Order not found.' });
+
+    order.Status = 'approved';
+    await order.save();
+
+    // Fetch user email and mobile
+    const user = await User.findOne({ name: order.User_Name });
+
+    // Attractive, business-style email
+    if (user && user.email) {
+      await sendEmail(
+        user.email,
+        'Your SGPV Library Order Has Been Accepted!',
+        `
+        <div style="font-family: Arial, sans-serif; color: #222;">
+          <h2 style="color: #2563eb;">Hey ${user.name},</h2>
+          <p>
+            <strong>I am the SGPV Library Admin.</strong><br>
+            We are pleased to inform you that your order <b>(Order ID: ${order.Order_ID})</b> has been <span style="color:green;font-weight:bold;">ACCEPTED</span>!
+          </p>
+          <p>
+            <b>Order Details:</b>
+            <ul>
+              ${order.Subjects.map(subj => `<li><b>${subj.code}</b> - ${subj.name}</li>`).join('')}
+            </ul>
+          </p>
+          <p>
+            You will be notified when your books are ready for pickup.<br>
+            Thank you for using <b>Sai Ganapathi Library</b>!
+          </p>
+          <hr>
+          <p style="font-size:13px;color:#888;">This is an automated message from SGPV Library. Please do not reply.</p>
+        </div>
+        `
+      );
+    }
+
+    res.json({ message: 'Order accepted and student notified.' });
+  } catch (err) {
+    res.status(500).json({ message: 'Failed to accept order.' });
+  }
+});
+
+// Admin: Reject order
+router.post('/admin/orders/:id/reject', protect, async (req, res) => {
+  // TODO: Add admin check if needed
+  const { reason } = req.body;
+  if (!reason || !reason.trim()) {
+    return res.status(400).json({ message: 'Rejection reason required.' });
+  }
+  try {
+    const order = await Order.findById(req.params.id);
+    if (!order) return res.status(404).json({ message: 'Order not found.' });
+
+    order.Status = 'rejected';
+    order.Reject_Reason = reason;
+    await order.save();
+
+    // Fetch user email and mobile
+    const user = await User.findOne({ name: order.User_Name });
+
+    // Attractive, business-style email
+    if (user && user.email) {
+      await sendEmail(
+        user.email,
+        'Your SGPV Library Order Has Been Rejected',
+        `
+        <div style="font-family: Arial, sans-serif; color: #222;">
+          <h2 style="color: #dc2626;">Hey ${user.name},</h2>
+          <p>
+            <strong>I am the SGPV Library Admin.</strong><br>
+            Unfortunately, your order <b>(Order ID: ${order.Order_ID})</b> has been <span style="color:red;font-weight:bold;">REJECTED</span>.
+          </p>
+          <p>
+            <b>Reason for rejection:</b><br>
+            <span style="color:#dc2626;">${reason}</span>
+          </p>
+          <p>
+            If you have any questions, please contact the library staff.<br>
+            Thank you for using <b>Sai Ganapathi Library</b>.
+          </p>
+          <hr>
+          <p style="font-size:13px;color:#888;">This is an automated message from SGPV Library. Please do not reply.</p>
+        </div>
+        `
+      );
+    }
+
+    res.json({ message: 'Order rejected and student notified.' });
+  } catch (err) {
+    res.status(500).json({ message: 'Failed to reject order.' });
+  }
+});
+
+// Email configuration
+const transporter = nodemailer.createTransport({
+    secure: true,
+    host: 'smtp.gmail.com',
+    port: 465,
+    auth: {
+        user: 'prajwalkoppisettyhp@gmail.com',
+        pass: 'msufopllixbzsfra' // Use an App Password, not your real password
+    }
+});
+
+function sendEmail(to, subject, html) {
+    return transporter.sendMail({
+        to,
+        subject,
+        html
+    });
+}
 
 module.exports = router;
