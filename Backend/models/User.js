@@ -52,6 +52,38 @@ const userSchema = new mongoose.Schema({
   timestamps: true // Adds createdAt and updatedAt fields
 });
 
+const OrderSchema = new mongoose.Schema({
+  Order_ID: {
+    type: String,
+    required: true,
+  },
+  User_Name: {
+    type: String,
+    required: true,
+  },
+  Subjects: [
+    {
+      code: { type: String, required: true },
+      name: { type: String, required: true }
+    }
+  ],
+  Order_Date: {
+    type: String, // Store as "DD-MM-YYYY"
+    default: function () {
+      const d = new Date();
+      const day = String(d.getDate()).padStart(2, '0');
+      const month = String(d.getMonth() + 1).padStart(2, '0');
+      const year = d.getFullYear();
+      return `${day}-${month}-${year}`;
+    }
+  },
+  Status: {
+    type: String,
+    enum: ['pending', 'approved', 'rejected'],
+    default: 'pending',
+  }
+});
+
 // Hash password before saving (important for security)
 userSchema.pre('save', async function(next) {
   if (!this.isModified('password')) {
@@ -68,4 +100,7 @@ userSchema.methods.comparePassword = async function(candidatePassword) {
 };
 
 const User = mongoose.model('User', userSchema);
+const Order = mongoose.model('Order', OrderSchema);
+// Export the Models
 module.exports = User;
+module.exports.Order = Order;

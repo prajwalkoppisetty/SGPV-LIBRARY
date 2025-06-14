@@ -1,6 +1,7 @@
 const express = require('express');
 const router = express.Router();
 const User = require('../models/User');
+const { Order } = require('../models/User'); // Correctly import Order model
 const multer = require('multer');
 const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
@@ -260,6 +261,70 @@ router.get('/me', protect, async (req, res) => {
     }
   } catch (err) {
     return res.status(500).json({ success: false, message: 'Server error' });
+  }
+});
+
+//Orders Route-to Create the order by Student
+router.post('/Create_Order', protect, async (req, res) => {
+  const { Order_ID, subjects } = req.body;
+
+  if (!Order_ID || !subjects || !Array.isArray(subjects) || subjects.length === 0) {
+    return res.status(400).json({ message: 'Order ID and subjects array are required.' });
+  }
+
+  // Check for duplicate Order_ID
+  const exists = await Order.exists({ Order_ID });
+  if (exists) {
+    return res.status(409).json({ message: 'Order ID already exists. Please try again.' });
+  }
+
+  try {
+    const user = await User.findById(req.user.id);
+    if (!user) {
+      return res.status(401).json({ message: 'User not found.' });
+    }
+
+    const order = new Order({
+      Order_ID,
+      User_Name: user.name,
+      Subjects: subjects,
+      Status: 'pending'
+    });
+
+    await order.save();
+
+    res.status(201).json({ message: 'Order created successfully!', Order_ID, order });
+  } catch (error) {
+    console.error('Error creating order:', error);
+    res.status(500).json({ message: 'Server error while creating order.' });
+  }
+});
+
+// Check if Order_ID exists (for uniqueness)
+router.get('/check_order_id/:id', protect, async (req, res) => {
+  const { id } = req.params;
+  try {
+    const exists = await Order.exists({ Order_ID: id });
+    res.json({ exists: !!exists });
+  } catch {
+    res.json({ exists: false });
+  }
+});
+
+// Get all orders for the logged-in user
+router.get('/my_orders', protect, async (req, res) => {
+  try {
+    const user = await User.findById(req.user.id);
+    if (!user) {
+      return res.status(401).json({ message: 'User not found.' });
+    }
+
+    // Find all orders for this user (by User_Name)
+    const orders = await Order.find({ User_Name: user.name }).sort({ Order_Date: -1 });
+    res.status(200).json({ orders });
+  } catch (error) {
+    console.error('Error fetching user orders:', error);
+    res.status(500).json({ message: 'Server error while fetching orders.' });
   }
 });
 

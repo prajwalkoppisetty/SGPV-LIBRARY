@@ -23,11 +23,11 @@ function Navbar() {
   ];
 
   const studentNavItems = [
+    { path: '/', label: 'Home' },
     { path: '/Profile', label: 'Profile' },
     { path: '/Booklist', label: 'Book List' },
     { path: '/My_Books', label: 'My Books' },
-    
-    
+    { path: '/Contact_Us', label: 'Contact Us' },
   ];
 
   const adminNavItems = [
@@ -35,20 +35,19 @@ function Navbar() {
     { path: '/Orders', label: 'Orders' },
     { path: '/Order_History', label: 'Order History' },
     { path: '/Monthly_Report', label: 'Monthly Report' },
-    
+    { path: '/Contact_Us', label: 'Contact Us' },
   ];
 
-  let navItems = [...commonNavItems];
-
-  if (user?.userRole === 'Admin') {
-    navItems = [...commonNavItems, ...adminNavItems];
-  } else if (user?.userRole === 'student') {
-    navItems = [...commonNavItems, ...studentNavItems];
+  // Choose navItems based on login and role
+  let navItems = commonNavItems;
+  if (isLoggedIn && user?.userRole === 'Admin') {
+    navItems = adminNavItems;
+  } else if (isLoggedIn && user?.userRole === 'student') {
+    navItems = studentNavItems;
   }
 
   return (
     <header className='fixed top-0 left-0 w-full z-50 flex justify-between items-center text-black py-6 px-8 md:px-32 bg-white drop-shadow-md'>
-      
       {/* Logo */}
       <Link to='/' className='flex items-center hover:scale-105 transition-all' onClick={closeMenu}>
         <img src={logo} alt="Sai Ganapathi Library Logo" className='w-14' />
@@ -72,7 +71,7 @@ function Navbar() {
 
       {/* Desktop Right Section */}
       <div className='relative hidden xl:flex items-center gap-3 pt-2'>
-        {isLoggedIn && user?.userRole !=='Admin' && (
+        {isLoggedIn && user?.userRole !== 'Admin' && (
           <Link to="/cart" className="flex items-center justify-center mr-5">
             <i className="bx bx-cart text-2xl hover:text-blue-600 transition" title="Cart"></i>
           </Link>
@@ -120,7 +119,7 @@ function Navbar() {
             </li>
           ))}
 
-          {isLoggedIn && user?.userRole !=='Admin' && (
+          {isLoggedIn && user?.userRole !== 'Admin' && (
             <li
               onClick={closeMenu}
               className="w-full text-center p-4 hover:bg-sky-400 hover:text-white transition-all border-b border-gray-200 flex items-center justify-center gap-2"
@@ -149,3 +148,4 @@ function Navbar() {
 }
 
 export default Navbar;
+

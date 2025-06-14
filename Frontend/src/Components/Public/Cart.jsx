@@ -1,8 +1,11 @@
 import React, { useEffect, useState } from 'react';
+import axios from 'axios';
 
 export default function Cart() {
   const [cartItems, setCartItems] = useState([]);
   const [showCheckoutOverlay, setShowCheckoutOverlay] = useState(false);
+  const [checkoutMessage, setCheckoutMessage] = useState('');
+  const [orderId, setOrderId] = useState('');
 
   useEffect(() => {
     const stored = localStorage.getItem('cartItems');
@@ -17,21 +20,74 @@ export default function Cart() {
     localStorage.setItem('cartItems', JSON.stringify(updated));
   };
 
-  const handleCheckout = () => {
-    console.log('Checked out:', cartItems);
-    setCartItems([]);
-    localStorage.removeItem('cartItems');
-    setShowCheckoutOverlay(true);
-    setTimeout(() => setShowCheckoutOverlay(false), 2000);
+  // Generate a unique 6-digit Order_ID, check with backend for uniqueness
+  const generateUniqueOrderId = async () => {
+    let unique = false;
+    let newId = '';
+    while (!unique) {
+      newId = Math.floor(100000 + Math.random() * 900000).toString();
+      // Check with backend if this Order_ID exists
+      try {
+        const res = await axios.get(
+          `http://localhost:3000/api/auth/check_order_id/${newId}`,
+          { withCredentials: true }
+        );
+        if (!res.data.exists) unique = true;
+      } catch {
+        // If error, assume it's unique (or handle as needed)
+        unique = true;
+      }
+    }
+    return newId;
+  };
+
+  // Send all subjects as an array to backend on checkout
+  const handleCheckout = async () => {
+    if (cartItems.length === 0) return;
+    setCheckoutMessage('');
+    setOrderId('');
+    const orderIdVal = await generateUniqueOrderId();
+
+    // Prepare subjects array: [{ code: '...', name: '...' }, ...]
+    const subjects = cartItems.map(item => ({
+      code: item.code,
+      name: item.name
+    }));
+
+    try {
+      await axios.post(
+        'http://localhost:3000/api/auth/Create_Order',
+        {
+          Order_ID: orderIdVal,
+          subjects
+        },
+        { withCredentials: true }
+      );
+      setOrderId(orderIdVal);
+      setCheckoutMessage('Checkout successful!');
+      setCartItems([]);
+      localStorage.removeItem('cartItems');
+      setShowCheckoutOverlay(true);
+      setTimeout(() => setShowCheckoutOverlay(false), 2000);
+    } catch (err) {
+      setCheckoutMessage('Order failed. Please try again.');
+    }
   };
 
   return (
     <div className="flex flex-col items-center min-h-[70vh] pt-10 px-2 bg-gradient-to-br">
       {/* Checkout Success Popup */}
       {showCheckoutOverlay && (
-        <div className="fixed top-6 right-6 z-50 flex items-center gap-2 bg-green-600 text-white px-5 py-3 rounded-lg shadow-lg animate-fade-in">
-          <i className="bx bx-check-circle text-2xl"></i>
-          <span className="font-semibold">Checkout successful!</span>
+        <div className="fixed top-6 right-6 z-50 flex flex-col items-end gap-2">
+          {orderId && (
+            <div className="bg-blue-600 text-white px-5 py-2 rounded-lg shadow mb-1 font-semibold">
+              Order ID: {orderId}
+            </div>
+          )}
+          <div className="flex items-center gap-2 bg-green-600 text-white px-5 py-3 rounded-lg shadow-lg animate-fade-in">
+            <i className="bx bx-check-circle text-2xl"></i>
+            <span className="font-semibold">{checkoutMessage || 'Checkout successful!'}</span>
+          </div>
         </div>
       )}
 
@@ -67,6 +123,13 @@ export default function Cart() {
               ))}
             </tbody>
           </table>
+        )}
+
+        {checkoutMessage && (
+          <div className={`text-center mb-4 ${checkoutMessage.includes('failed') ? 'text-red-600' : 'text-green-600'}`}>
+            {orderId && <div className="font-semibold mb-1">Order ID: {orderId}</div>}
+            {checkoutMessage}
+          </div>
         )}
 
         <div className="flex justify-center">
