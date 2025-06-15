@@ -10,7 +10,7 @@ const PORT = process.env.PORT || 3000; // Define PORT for consistent use
 
 app.use(Express.json());
 app.use(cors({
-    origin: 'http://localhost:5173', // Adjust this to your frontend URL
+    origin: 'https://sgpv-library-deploy.vercel.apps', // Adjust this to your frontend URL
     credentials: true // Allow cookies to be sent with requests
 }));
 app.use(Express.urlencoded({ extended: true }));
