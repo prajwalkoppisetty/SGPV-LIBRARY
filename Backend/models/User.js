@@ -79,13 +79,21 @@ const OrderSchema = new mongoose.Schema({
   },
   Status: {
     type: String,
-    enum: ['pending', 'approved', 'rejected'],
+    enum: ['pending', 'approved', 'rejected', 'recieved', 'completed'],
     default: 'pending',
   },
   Reject_Reason: {
     type: String,
     default: ''
-  }
+  },
+  Return_Date: {
+    type: String, // Format: "DD-MM-YYYY"
+    default: ''
+  },
+  Returned_Date: {
+    type: String, // Format: "DD-MM-YYYY"
+    default: ''
+  },
 });
 
 // Hash password before saving (important for security)

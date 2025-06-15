@@ -31,11 +31,14 @@ function Navbar() {
   ];
 
   const adminNavItems = [
-    { path: '/Profile', label: 'Profile' },
+    { path:'/', label: 'Home' },
+    
     { path: '/Orders', label: 'Orders' },
+    { path: '/GiveOrders', label: 'Give Orders' },
+    { path:  '/TakeOrders', label: ' Take Books'},
     { path: '/Order_History', label: 'Order History' },
     { path: '/Monthly_Report', label: 'Monthly Report' },
-    { path: '/Contact_Us', label: 'Contact Us' },
+    
   ];
 
   // Choose navItems based on login and role

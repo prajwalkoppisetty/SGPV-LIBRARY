@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import axios from 'axios';
+import SearchBar from './SearchBar';
 
 export default function Orders() {
   const [orders, setOrders] = useState([]);
@@ -8,13 +9,20 @@ export default function Orders() {
   const [rejectReason, setRejectReason] = useState('');
   const [actionMessage, setActionMessage] = useState('');
   const [actionLoading, setActionLoading] = useState(false);
+  const [searchId, setSearchId] = useState('');
 
-  // Fetch all pending orders
-  const fetchOrders = async () => {
+  // Fetch all pending orders or by Order_ID if searched
+  const fetchOrders = async (orderId = '') => {
     setLoading(true);
     try {
-      const res = await axios.get('http://localhost:3000/api/auth/admin/orders', { withCredentials: true });
-      setOrders(res.data.orders || []);
+      let res;
+      if (orderId) {
+        res = await axios.get(`http://localhost:3000/api/auth/admin/orders/search/${orderId}`, { withCredentials: true });
+        setOrders(res.data.order ? [res.data.order] : []);
+      } else {
+        res = await axios.get('http://localhost:3000/api/auth/admin/orders', { withCredentials: true });
+        setOrders(res.data.orders || []);
+      }
     } catch {
       setOrders([]);
     }
@@ -69,7 +77,14 @@ export default function Orders() {
   };
 
   return (
-    <div className="max-w-3xl mx-auto mt-10 p-4 bg-white rounded-xl shadow">
+    <div className="w-full max-w-xs p-2 sm:max-w-md md:max-w-3xl md:p-4 mx-auto mt-10 bg-white rounded-xl shadow">
+      <div className="mb-4 flex justify-start">
+        <SearchBar onSearch={id => {
+          setSearchId(id);
+          if (id.trim().length === 6) fetchOrders(id.trim());
+          if (id.trim() === '') fetchOrders('');
+        }}/>
+      </div>
       <h2 className="text-2xl font-bold mb-6 text-blue-700 text-center">Pending Orders</h2>
       {actionMessage && (
         <div className="mb-4 text-center text-blue-600 font-semibold">{actionMessage}</div>

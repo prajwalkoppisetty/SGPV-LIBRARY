@@ -27,6 +27,18 @@ import Order_History from './Components/Admin/Order_History';
 import Monthly_Report from './Components/Admin/Monthly_Report';
 import { useAuth } from './Components/Common/AuthContext'; // Import Auth context
 
+import GiveOrders from './Components/Admin/GiveOrders';
+import TakenBooks from './Components/Admin/TakenBooks';
+
+// AdminRoute component for admin-only access
+function AdminRoute({ children }) {
+  const { user, isLoading } = useAuth();
+  if (isLoading) return <div className="text-center mt-10">Checking access...</div>;
+  if (!user || user.userRole !== 'Admin') {
+    return <div className="text-center mt-10 text-red-600 font-bold">Access denied.Can Be Accessed By Admins only.</div>;
+  }
+  return children;
+}
 
 function App() {
   return (
@@ -47,9 +59,31 @@ function App() {
           {/* Add more routes as needed */}
 
           {/* Admin Routes */}
-          <Route path='/Orders' element={<Orders/>}></Route>
-          <Route path='/Order_History' element={<Order_History/>}></Route>
-          <Route path='/Monthly_Report' element={<Monthly_Report/>}></Route>
+          <Route path='/Orders' element={
+            <AdminRoute>
+              <Orders/>
+            </AdminRoute>
+          }/>
+          <Route path='/Order_History' element={
+            <AdminRoute>
+              <Order_History/>
+            </AdminRoute>
+          }/>
+          <Route path='/Monthly_Report' element={
+            <AdminRoute>
+              <Monthly_Report/>
+            </AdminRoute>
+          }/>
+          <Route path='/GiveOrders' element={
+            <AdminRoute>
+              <GiveOrders/>
+            </AdminRoute>
+          }/>
+          <Route path='/TakeOrders' element={
+            <AdminRoute>
+              <TakenBooks/>
+            </AdminRoute>
+          }/>
           
           {/* Catch-all route for undefined paths */}
         </Routes>

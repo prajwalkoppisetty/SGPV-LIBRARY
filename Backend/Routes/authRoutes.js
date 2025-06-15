@@ -6,6 +6,7 @@ const multer = require('multer');
 const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
 const { protect } = require('../middleware/authMiddleware');
+const adminOnly = require('../middleware/adminMiddleware');
 const nodemailer = require('nodemailer');
 
 // --- Multer Configuration for in-memory storage ---
@@ -330,7 +331,7 @@ router.get('/my_orders', protect, async (req, res) => {
 });
 
 // Admin: Get all pending orders
-router.get('/admin/orders', protect, async (req, res) => {
+router.get('/admin/orders', protect, adminOnly, async (req, res) => {
   // TODO: Add admin check if needed
   try {
     const orders = await Order.find({ Status: 'pending' }).sort({ Order_Date: -1 });
@@ -341,7 +342,7 @@ router.get('/admin/orders', protect, async (req, res) => {
 });
 
 // Admin: Accept order
-router.post('/admin/orders/:id/accept', protect, async (req, res) => {
+router.post('/admin/orders/:id/accept', protect, adminOnly, async (req, res) => {
   // TODO: Add admin check if needed
   try {
     const order = await Order.findById(req.params.id);
@@ -389,7 +390,7 @@ router.post('/admin/orders/:id/accept', protect, async (req, res) => {
 });
 
 // Admin: Reject order
-router.post('/admin/orders/:id/reject', protect, async (req, res) => {
+router.post('/admin/orders/:id/reject', protect, adminOnly, async (req, res) => {
   // TODO: Add admin check if needed
   const { reason } = req.body;
   if (!reason || !reason.trim()) {
@@ -436,6 +437,158 @@ router.post('/admin/orders/:id/reject', protect, async (req, res) => {
     res.json({ message: 'Order rejected and student notified.' });
   } catch (err) {
     res.status(500).json({ message: 'Failed to reject order.' });
+  }
+});
+
+// Admin: Search order by Order_ID
+router.get('/admin/orders/search/:orderId', protect, adminOnly, async (req, res) => {
+  // TODO: Add admin check if needed
+  try {
+    const order = await Order.findOne({ Order_ID: req.params.orderId });
+    if (!order) return res.status(404).json({ message: 'Order not found.' });
+    res.json({ order });
+  } catch (err) {
+    res.status(500).json({ message: 'Failed to search order.' });
+  }
+});
+
+// Admin: Get all accepted, rejected, recieved, and completed orders (Order History)
+router.get('/admin/orders/history', protect, adminOnly, async (req, res) => {
+  try {
+    // Include all relevant statuses for history
+    const orders = await Order.find({ Status: { $in: ['rejected', 'completed'] } }).sort({ Order_Date: -1 });
+    res.json({ orders });
+  } catch (err) {
+    res.status(500).json({ message: 'Failed to fetch order history.' });
+  }
+});
+
+// Admin: Get all approved orders that are not yet marked as 'given'
+router.get('/admin/orders/approved', protect, adminOnly, async (req, res) => {
+  try {
+    const orders = await Order.find({ Status: 'approved' }).sort({ Order_Date: -1 });
+    res.json({ orders });
+  } catch (err) {
+    res.status(500).json({ message: 'Failed to fetch approved orders.' });
+  }
+});
+
+// Admin: Mark order as 'given' (recieved) and set Return_Date (14 days from today), send email, move to history
+router.post('/admin/orders/:id/give', protect, adminOnly, async (req, res) => {
+  try {
+    const order = await Order.findById(req.params.id);
+    if (!order) return res.status(404).json({ message: 'Order not found.' });
+
+    // Only allow if currently approved
+    if (order.Status !== 'approved') {
+      return res.status(400).json({ message: 'Order must be approved before giving.' });
+    }
+
+    // Set status and return date
+    order.Status = 'recieved';
+    const today = new Date();
+    today.setDate(today.getDate() + 14);
+    const day = String(today.getDate()).padStart(2, '0');
+    const month = String(today.getMonth() + 1).padStart(2, '0');
+    const year = today.getFullYear();
+    order.Return_Date = `${day}-${month}-${year}`;
+
+    await order.save();
+
+    // Fetch user email
+    const user = await User.findOne({ name: order.User_Name });
+
+    // Send professional email with deadline
+    if (user && user.email) {
+      await sendEmail(
+        user.email,
+        'Books Issued - SGPV Library',
+        `
+        <div style="font-family: Arial, sans-serif; color: #222;">
+          <h2 style="color: #2563eb;">Hey ${user.name},</h2>
+          <p>
+            <strong>I am the SGPV Library Admin.</strong><br>
+            Your books for order <b>(Order ID: ${order.Order_ID})</b> have been <span style="color:green;font-weight:bold;">issued</span> to you.
+          </p>
+          <p>
+            <b>Return Deadline:</b> <span style="color:#dc2626;">${order.Return_Date}</span>
+          </p>
+          <p>
+            Please make sure to return the books on or before the deadline to avoid any penalties.<br>
+            Thank you for using <b>Sai Ganapathi Library</b>!
+          </p>
+          <hr>
+          <p style="font-size:13px;color:#888;">This is an automated message from SGPV Library. Please do not reply.</p>
+        </div>
+        `
+      );
+    }
+
+    res.json({ message: 'Order marked as given and return deadline emailed to student.', order });
+  } catch (err) {
+    res.status(500).json({ message: 'Failed to update order.' });
+  }
+});
+
+// Admin: Get all orders with status 'recieved' (books with students)
+router.get('/admin/orders/recieved', protect, adminOnly, async (req, res) => {
+  try {
+    const orders = await Order.find({ Status: 'recieved' }).sort({ Order_Date: -1 });
+    res.json({ orders });
+  } catch (err) {
+    res.status(500).json({ message: 'Failed to fetch taken books.' });
+  }
+});
+
+// Admin: Mark order as returned (completed) and send thank you email
+router.post('/admin/orders/:id/returned', protect, adminOnly, async (req, res) => {
+  try {
+    const order = await Order.findById(req.params.id);
+    if (!order) return res.status(404).json({ message: 'Order not found.' });
+
+    // Only allow if currently 'recieved'
+    if (order.Status !== 'recieved') {
+      return res.status(400).json({ message: 'Order must be in recieved status.' });
+    }
+
+    // Set status to 'completed' and set Returned_Date to today
+    order.Status = 'completed';
+    const today = new Date();
+    const day = String(today.getDate()).padStart(2, '0');
+    const month = String(today.getMonth() + 1).padStart(2, '0');
+    const year = today.getFullYear();
+    order.Returned_Date = `${day}-${month}-${year}`;
+    await order.save();
+
+    // Fetch user email
+    const user = await User.findOne({ name: order.User_Name });
+
+    // Send thank you email
+    if (user && user.email) {
+      await sendEmail(
+        user.email,
+        'Thank You for Returning Books - SGPV Library',
+        `
+        <div style="font-family: Arial, sans-serif; color: #222;">
+          <h2 style="color: #2563eb;">Hey ${user.name},</h2>
+          <p>
+            <strong>I am the SGPV Library Admin.</strong><br>
+            Thank you for returning your books (Order ID: <b>${order.Order_ID}</b>) on time!
+          </p>
+          <p>
+            We appreciate your responsibility. You may now borrow new books as per library policy.<br>
+            Thank you for using <b>Sai Ganapathi Library</b>!
+          </p>
+          <hr>
+          <p style="font-size:13px;color:#888;">This is an automated message from SGPV Library. Please do not reply.</p>
+        </div>
+        `
+      );
+    }
+
+    res.json({ message: 'Book marked as returned and thank you email sent.', order });
+  } catch (err) {
+    res.status(500).json({ message: 'Failed to update order.' });
   }
 });
 
